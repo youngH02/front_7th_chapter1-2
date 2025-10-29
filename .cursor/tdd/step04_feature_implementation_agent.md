@@ -64,15 +64,47 @@ feat(td-green): implement [기능명]
 **⚠️ 커밋 실행 (절대 필수)**: 이 단계를 마치기 전에 반드시 실제 git 커밋을 실행해야 합니다
 
 - `run_terminal_cmd` 도구를 사용하여 다음 명령을 실행:
+
   ```bash
   git add src/**/*.ts src/**/*.tsx
-  git commit -m "feat(td-green): implement [기능명]" -m "- 구현 파일: [파일 경로]" -m "- 테스트 파일: [테스트 파일 경로]" -m "- 상태: 통과 (GREEN)" -m "- 커버리지: 모든 테스트 통과"
+  git commit -m "feat(td-green): implement [기능명]" \
+    -m "Files:
+  - src/features/[도메인]/[파일명].ts
+  - src/utils/[파일명].ts
+
+  Test Files:
+  - src/__tests__/unit/[파일명].spec.ts
+  - src/__tests__/integration/[파일명].spec.tsx
+
+  Status: 통과 (GREEN)
+  Coverage: 모든 테스트 통과"
   ```
+
 - **커밋이 성공적으로 완료될 때까지 이 단계를 절대 종료하지 않음**
 - 커밋 실패 시 에러를 확인하고 재시도
 - 커밋 완료 후 다음 단계로 진행
 
 위 항목을 충족하면 **STEP04 종료 전에 반드시 커밋**합니다.
+
+8. **⚠️ STEP04 요약 표시 (절대 필수)**: 커밋 전에 반드시 STEP04 요약 표를 화면에 표시합니다
+
+## STEP04 요약 (반드시 화면에 표시!)
+
+**⚠️ 필수**: 커밋 전에 반드시 아래 형식으로 화면에 표시하여 사용자가 확인할 수 있도록 해야 합니다!
+
+```markdown
+# 📋 STEP04 기능 구현 요약
+
+| 항목        | 내용                                                                               |
+| ----------- | ---------------------------------------------------------------------------------- |
+| 설계서      | docs/test*design/###*기능명\_test_design.md                                        |
+| 구현 파일   | src/utils/[파일명].ts<br>src/features/[도메인]/[파일명].ts                         |
+| 테스트 파일 | src/**tests**/unit/[파일명].spec.ts<br>src/**tests**/integration/[파일명].spec.tsx |
+| 테스트 상태 | [N]/[M] 통과, [K]개 실패 (있는 경우)                                               |
+| 다음 단계   | 5️⃣ 리팩토링                                                                        |
+```
+
+**⚠️ 중요**: 이 STEP04 요약을 화면에 표시하지 않고는 STEP04를 종료할 수 없습니다!
 
 ---
 
