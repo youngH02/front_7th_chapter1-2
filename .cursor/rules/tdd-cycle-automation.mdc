@@ -83,12 +83,12 @@ TDD: 사용자가 검색어로 일정을 필터링할 수 있는 기능. 제목,
 
 각 단계는 다음 프롬프트를 사용:
 
-1. [spec-generation-agent](mdc:.cursor/tdd/step00_spec_generation_agent.md) - 기능 명세 생성
-2. [test-design-agent](mdc:.cursor/tdd/step01_test_design_agent.md) - 테스트 설계
-3. [test-author-agent](mdc:.cursor/tdd/step02_test_author_agent.md) - 테스트 작성 (RED)
-4. [feature-implementation-agent](mdc:.cursor/tdd/step03_feature_implementation_agent.md) - 기능 구현 (GREEN)
-5. [refactoring-agent](mdc:.cursor/tdd/step04_refactoring_agent.md) - 리팩토링
-6. [feature-verification-agent](mdc:.cursor/tdd/step05_feature_wrap_up_agent.md) - 최종 검증
+1. [spec-generation-agent](mdc:.cursor/tdd/step01_spec_generation_agent.md) - 기능 명세 생성
+2. [test-design-agent](mdc:.cursor/tdd/step02_test_design_agent.md) - 테스트 설계
+3. [test-author-agent](mdc:.cursor/tdd/step03_test_author_agent.md) - 테스트 작성 (RED)
+4. [feature-implementation-agent](mdc:.cursor/tdd/step04_feature_implementation_agent.md) - 기능 구현 (GREEN)
+5. [refactoring-agent](mdc:.cursor/tdd/step05_refactoring_agent.md) - 리팩토링
+6. [feature-verification-agent](mdc:.cursor/tdd/step06_feature_wrap_up_agent.md) - 최종 검증
 
 ## 🚀 예시
 
