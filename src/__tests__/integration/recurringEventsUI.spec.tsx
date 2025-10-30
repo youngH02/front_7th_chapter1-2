@@ -22,6 +22,14 @@ describe('반복 일정 UI 통합 테스트', () => {
     await userEvent.clear(endTimeInput);
     await userEvent.type(endTimeInput, '10:00');
 
+    const repeatCheckbox = screen.getByRole('checkbox', { name: /반복 일정/i });
+    await userEvent.click(repeatCheckbox);
+
+    await waitFor(() => {
+      const repeatTypeSelect = screen.getByLabelText('반복 유형');
+      expect(repeatTypeSelect).toBeInTheDocument();
+    });
+
     const repeatTypeSelect = screen.getByLabelText('반복 유형');
     await userEvent.selectOptions(repeatTypeSelect, 'daily');
 
@@ -50,6 +58,14 @@ describe('반복 일정 UI 통합 테스트', () => {
     await userEvent.type(startTimeInput, '14:00');
     await userEvent.clear(endTimeInput);
     await userEvent.type(endTimeInput, '15:00');
+
+    const repeatCheckbox = screen.getByRole('checkbox', { name: /반복 일정/i });
+    await userEvent.click(repeatCheckbox);
+
+    await waitFor(() => {
+      const repeatTypeSelect = screen.getByLabelText('반복 유형');
+      expect(repeatTypeSelect).toBeInTheDocument();
+    });
 
     const repeatTypeSelect = screen.getByLabelText('반복 유형');
     await userEvent.selectOptions(repeatTypeSelect, 'weekly');

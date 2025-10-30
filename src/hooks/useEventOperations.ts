@@ -31,11 +31,33 @@ export const useEventOperations = (editing: boolean, onSave?: () => void) => {
           body: JSON.stringify(eventData),
         });
       } else {
-        response = await fetch('/api/events', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(eventData),
-        });
+        const baseEvent: Event = {
+          ...(eventData as EventForm),
+          id: Date.now().toString(),
+        };
+
+        if (eventData.repeat.type !== 'none') {
+          const recurringEvents = generateRecurringEvents(baseEvent, eventData.repeat);
+
+          for (const event of recurringEvents) {
+            const eventResponse = await fetch('/api/events', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(event),
+            });
+
+            if (!eventResponse.ok) {
+              throw new Error('Failed to save recurring event');
+            }
+          }
+          response = { ok: true } as Response;
+        } else {
+          response = await fetch('/api/events', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(baseEvent),
+          });
+        }
       }
 
       if (!response.ok) {
