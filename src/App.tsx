@@ -162,12 +162,34 @@ function App() {
     if (!pendingEvent) return;
 
     if (recurringDialogType === 'edit') {
+      // 폼에 값 채우기
       editEvent(pendingEvent);
     } else {
-      const baseId = pendingEvent.id.split('_')[0];
-      const eventsToDelete = events.filter((e) => e.id.startsWith(baseId + '_') || e.id === baseId);
-      for (const event of eventsToDelete) {
-        await deleteEvent(event.id);
+      // baseId로 모든 반복 인스턴스 찾기
+      const baseId = pendingEvent.id.includes('_')
+        ? pendingEvent.id.split('_')[0]
+        : pendingEvent.id;
+      const eventsToDelete = events.filter((e) => {
+        const eventBaseId = e.id.includes('_') ? e.id.split('_')[0] : e.id;
+        return eventBaseId === baseId;
+      });
+
+      try {
+        const response = await fetch('/api/events-list', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ eventIds: eventsToDelete.map((e) => e.id) }),
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to delete recurring events');
+        }
+
+        await fetchEvents();
+        enqueueSnackbar('반복 일정이 모두 삭제되었습니다.', { variant: 'info' });
+      } catch (error) {
+        console.error('Error deleting recurring events:', error);
+        enqueueSnackbar('반복 일정 삭제 실패', { variant: 'error' });
       }
     }
     closeRecurringDialog();

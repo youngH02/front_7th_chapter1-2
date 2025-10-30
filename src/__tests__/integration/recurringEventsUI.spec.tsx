@@ -278,11 +278,13 @@ describe('반복 일정 UI 통합 테스트', () => {
     });
 
     await waitFor(() => {
-      const originalEvents = screen.getAllByText('원본 유지 테스트');
+      const eventList = within(screen.getByTestId('event-list'));
+      const originalEvents = eventList.getAllByText('원본 유지 테스트');
       expect(originalEvents.length).toBeGreaterThan(1);
     });
 
-    const originalCount = screen.getAllByText('원본 유지 테스트').length;
+    const eventList = within(screen.getByTestId('event-list'));
+    const originalCount = eventList.getAllByText('원본 유지 테스트').length;
 
     const editButtons = screen.getAllByLabelText(/Edit event/i);
     await user.click(editButtons[0]);
@@ -477,7 +479,8 @@ describe('반복 일정 UI 통합 테스트', () => {
     await user.click(updateButton);
 
     await waitFor(() => {
-      expect(screen.getByText('첫 번째 수정')).toBeInTheDocument();
+      const eventList = screen.getByTestId('event-list');
+      expect(within(eventList).getByText('첫 번째 수정')).toBeInTheDocument();
     });
 
     await waitFor(() => {

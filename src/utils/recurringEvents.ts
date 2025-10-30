@@ -27,7 +27,7 @@ export function generateRecurringEvents(baseEvent: Event, repeatInfo: RepeatInfo
       date: dateStr,
     });
 
-    currentDate = getNextDate(currentDate, repeatInfo.type, startDate);
+    currentDate = getNextDate(currentDate, repeatInfo.type, startDate, repeatInfo.interval || 1);
 
     if (currentDate > endDate) {
       break;
@@ -37,21 +37,26 @@ export function generateRecurringEvents(baseEvent: Event, repeatInfo: RepeatInfo
   return events;
 }
 
-function getNextDate(currentDate: Date, repeatType: string, startDate: Date): Date {
+function getNextDate(
+  currentDate: Date,
+  repeatType: string,
+  startDate: Date,
+  interval: number = 1
+): Date {
   const nextDate = new Date(currentDate);
 
   switch (repeatType) {
     case 'daily':
-      nextDate.setDate(nextDate.getDate() + 1);
+      nextDate.setDate(nextDate.getDate() + interval);
       break;
 
     case 'weekly':
-      nextDate.setDate(nextDate.getDate() + 7);
+      nextDate.setDate(nextDate.getDate() + 7 * interval);
       break;
 
     case 'monthly': {
       const targetDay = startDate.getDate();
-      nextDate.setMonth(nextDate.getMonth() + 1);
+      nextDate.setMonth(nextDate.getMonth() + interval);
       nextDate.setDate(1);
 
       const daysInMonth = new Date(nextDate.getFullYear(), nextDate.getMonth() + 1, 0).getDate();
@@ -61,7 +66,7 @@ function getNextDate(currentDate: Date, repeatType: string, startDate: Date): Da
       } else {
         nextDate.setMonth(nextDate.getMonth() + 1);
         nextDate.setDate(1);
-        return getNextDate(nextDate, repeatType, startDate);
+        return getNextDate(nextDate, repeatType, startDate, interval);
       }
       break;
     }
@@ -70,7 +75,7 @@ function getNextDate(currentDate: Date, repeatType: string, startDate: Date): Da
       const targetMonth = startDate.getMonth();
       const targetDay = startDate.getDate();
 
-      let yearToCheck = nextDate.getFullYear() + 1;
+      let yearToCheck = nextDate.getFullYear() + interval;
       const maxYear = 2025;
 
       while (yearToCheck <= maxYear) {
@@ -84,7 +89,7 @@ function getNextDate(currentDate: Date, repeatType: string, startDate: Date): Da
           return nextDate;
         }
 
-        yearToCheck++;
+        yearToCheck += interval;
       }
 
       nextDate.setFullYear(maxYear + 1);
@@ -92,7 +97,7 @@ function getNextDate(currentDate: Date, repeatType: string, startDate: Date): Da
     }
 
     default:
-      nextDate.setDate(nextDate.getDate() + 1);
+      nextDate.setDate(nextDate.getDate() + interval);
   }
 
   return nextDate;

@@ -26,11 +26,52 @@ export const useEventOperations = (editing: boolean, onSave?: () => void) => {
     try {
       let response;
       if (editing) {
-        response = await fetch(`/api/events/${(eventData as Event).id}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(eventData),
-        });
+        const event = eventData as Event;
+
+        // 반복 일정 시리즈 전체 수정
+        if (event.repeat.id && event.repeat.type !== 'none') {
+          response = await fetch(`/api/recurring-events/${event.repeat.id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(event),
+          });
+        }
+        // 일반 일정을 반복 일정으로 변경하는 경우
+        else if (event.repeat.type !== 'none' && !event.repeat.id) {
+          // 기존 일정 삭제
+          await fetch(`/api/events/${event.id}`, { method: 'DELETE' });
+
+          // 새로운 반복 일정들 생성
+          const baseEvent: Event = {
+            ...event,
+            id: Date.now().toString(),
+          };
+
+          const recurringEvents = generateRecurringEvents(baseEvent, event.repeat);
+          console.log('🔄 반복 일정 생성:', recurringEvents.length, '개');
+          console.log(
+            '📅 생성된 일정 날짜:',
+            recurringEvents.map((e) => e.date)
+          );
+
+          // /api/events-list 엔드포인트 사용
+          response = await fetch('/api/events-list', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ events: recurringEvents }),
+          });
+
+          if (!response.ok) {
+            throw new Error('Failed to save recurring events');
+          }
+        } else {
+          // 일반 수정
+          response = await fetch(`/api/events/${event.id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(event),
+          });
+        }
       } else {
         const baseEvent: Event = {
           ...(eventData as EventForm),
@@ -45,18 +86,16 @@ export const useEventOperations = (editing: boolean, onSave?: () => void) => {
             recurringEvents.map((e) => e.date)
           );
 
-          for (const event of recurringEvents) {
-            const eventResponse = await fetch('/api/events', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(event),
-            });
+          // /api/events-list 엔드포인트 사용
+          response = await fetch('/api/events-list', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ events: recurringEvents }),
+          });
 
-            if (!eventResponse.ok) {
-              throw new Error('Failed to save recurring event');
-            }
+          if (!response.ok) {
+            throw new Error('Failed to save recurring events');
           }
-          response = { ok: true } as Response;
         } else {
           response = await fetch('/api/events', {
             method: 'POST',
