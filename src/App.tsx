@@ -12,14 +12,12 @@ import {
   AlertTitle,
   Box,
   Button,
-  Checkbox,
   Dialog,
   DialogActions,
   DialogContent,
   DialogContentText,
   DialogTitle,
   FormControl,
-  FormControlLabel,
   FormLabel,
   IconButton,
   MenuItem,
@@ -55,6 +53,7 @@ import {
   getWeeksAtMonth,
 } from './utils/dateUtils';
 import { findOverlappingEvents } from './utils/eventOverlap';
+import { extractBaseId, findRecurringInstances } from './utils/recurringEventHelpers';
 import { getTimeErrorMessage } from './utils/timeValidation';
 
 const categories = ['업무', '개인', '가족', '기타'];
@@ -162,17 +161,10 @@ function App() {
     if (!pendingEvent) return;
 
     if (recurringDialogType === 'edit') {
-      // 폼에 값 채우기
       editEvent(pendingEvent);
     } else {
-      // baseId로 모든 반복 인스턴스 찾기
-      const baseId = pendingEvent.id.includes('_')
-        ? pendingEvent.id.split('_')[0]
-        : pendingEvent.id;
-      const eventsToDelete = events.filter((e) => {
-        const eventBaseId = e.id.includes('_') ? e.id.split('_')[0] : e.id;
-        return eventBaseId === baseId;
-      });
+      const baseId = extractBaseId(pendingEvent.id);
+      const eventsToDelete = findRecurringInstances(events, baseId);
 
       try {
         const response = await fetch('/api/events-list', {
