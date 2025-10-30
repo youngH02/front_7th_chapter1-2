@@ -295,11 +295,11 @@ describe('부정 케이스', () => {
   };
 
   it('TD-023: 잘못된 반복 유형 입력 - 지원하지 않는 반복 유형 입력 시 기본값 처리', () => {
-    const repeatInfo: RepeatInfo = {
-      type: 'invalid' as any,
+    const repeatInfo = {
+      type: 'invalid',
       interval: 1,
       endDate: '2025-01-07',
-    };
+    } as unknown as RepeatInfo;
     const events = generateRecurringEvents(baseEvent, repeatInfo);
 
     expect(events).toHaveLength(1);

@@ -75,7 +75,7 @@ export const useEventOperations = (editing: boolean, onSave?: () => void) => {
       } else {
         const baseEvent: Event = {
           ...(eventData as EventForm),
-          id: Date.now().toString(),
+          id: '', // 서버에서 ID 생성
         };
 
         if (eventData.repeat.type !== 'none') {
