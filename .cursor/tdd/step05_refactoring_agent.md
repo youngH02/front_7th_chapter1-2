@@ -11,6 +11,7 @@
 - [코드 컨벤션](mdc:.cursor/rules/00. foundation/code_conventions.mdc): 모든 코드 작성 시 엄격히 준수
 - [커밋 컨벤션](mdc:.cursor/rules/00. foundation/commit_conventions.mdc): 커밋 메시지 작성 시 준수
 - [프로젝트 구조](mdc:.cursor/rules/00. foundation/project_structure.mdc): 파일 배치 및 경로 결정 시 준수
+- **⚠️ 언어 규칙 (절대 필수)**: 모든 문서 및 코드 주석은 **한글과 영어만 사용**해야 합니다. 중국어, 일본어 등 다른 언어는 절대 사용 금지
 
 **⚠️ 금지 사항**:
 
