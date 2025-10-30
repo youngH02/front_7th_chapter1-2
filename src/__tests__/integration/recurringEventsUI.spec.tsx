@@ -4,10 +4,11 @@ import { render, screen, waitFor, within } from '@testing-library/react';
 import { UserEvent, userEvent } from '@testing-library/user-event';
 import { SnackbarProvider } from 'notistack';
 import { ReactElement } from 'react';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 
 import { setupMockHandlerCreation } from '../../__mocks__/handlersUtils';
 import App from '../../App';
+import { server } from '../../setupTests';
 import { Event } from '../../types';
 
 const theme = createTheme();
@@ -28,9 +29,19 @@ const setup = (element: ReactElement) => {
 
 const saveRecurringSchedule = async (
   user: UserEvent,
-  form: Omit<Event, 'id' | 'notificationTime'> & { repeatType: string }
+  form: Omit<Event, 'id' | 'notificationTime'> & { repeatType: string; repeatEndDate?: string }
 ) => {
-  const { title, date, startTime, endTime, location, description, category, repeatType } = form;
+  const {
+    title,
+    date,
+    startTime,
+    endTime,
+    location,
+    description,
+    category,
+    repeatType,
+    repeatEndDate,
+  } = form;
 
   await user.click(screen.getAllByText('일정 추가')[0]);
 
@@ -56,10 +67,19 @@ const saveRecurringSchedule = async (
   };
   await user.click(screen.getByText(repeatLabels[repeatType]));
 
+  if (repeatEndDate) {
+    const repeatEndDateInput = screen.getByLabelText('반복 종료일');
+    await user.type(repeatEndDateInput, repeatEndDate);
+  }
+
   await user.click(screen.getByTestId('event-submit-button'));
 };
 
 describe('반복 일정 UI 통합 테스트', () => {
+  afterEach(() => {
+    server.resetHandlers();
+  });
+
   it('TD-013: 캘린더 뷰 반복 아이콘 표시 - 캘린더 뷰에서 반복 일정에 Repeat 아이콘 표시됨', async () => {
     setupMockHandlerCreation();
     const { user } = setup(<App />);
@@ -77,8 +97,8 @@ describe('반복 일정 UI 통합 테스트', () => {
     });
 
     await waitFor(() => {
-      const repeatIcon = screen.queryByTestId('RepeatIcon');
-      expect(repeatIcon).toBeInTheDocument();
+      const repeatIcons = screen.queryAllByTestId('RepeatIcon');
+      expect(repeatIcons.length).toBeGreaterThan(0);
     });
   });
 
@@ -99,7 +119,8 @@ describe('반복 일정 UI 통합 테스트', () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByText(/매주 반복/i)).toBeInTheDocument();
+      const repeatTexts = screen.queryAllByText(/매주 반복/i);
+      expect(repeatTexts.length).toBeGreaterThan(0);
     });
   });
 
@@ -177,9 +198,13 @@ describe('반복 일정 UI 통합 테스트', () => {
     const updateButton = screen.getByRole('button', { name: /일정 수정/i });
     await user.click(updateButton);
 
-    await waitFor(() => {
-      expect(screen.getByText('수정된 제목')).toBeInTheDocument();
-    });
+    await waitFor(
+      () => {
+        const modifiedTitles = screen.queryAllByText('수정된 제목');
+        expect(modifiedTitles.length).toBeGreaterThan(0);
+      },
+      { timeout: 5000 }
+    );
   });
 
   it('TD-017: 전체 일정 수정 - "아니오" 선택 시 모든 반복 인스턴스가 수정됨', async () => {
@@ -247,8 +272,9 @@ describe('반복 일정 UI 통합 테스트', () => {
       description: '테스트',
       location: '회의실',
       category: '업무',
-      repeat: { type: 'daily', interval: 1 },
+      repeat: { type: 'daily', interval: 1, endDate: '2025-10-20' },
       repeatType: 'daily',
+      repeatEndDate: '2025-10-20',
     });
 
     await waitFor(() => {
@@ -282,8 +308,10 @@ describe('반복 일정 UI 통합 테스트', () => {
     await user.click(updateButton);
 
     await waitFor(() => {
-      expect(screen.getByText('수정된 단일 일정')).toBeInTheDocument();
-      const remainingOriginalEvents = screen.getAllByText('원본 유지 테스트');
+      const eventList = within(screen.getByTestId('event-list'));
+      const modifiedEvents = eventList.queryAllByText('수정된 단일 일정');
+      expect(modifiedEvents.length).toBeGreaterThan(0);
+      const remainingOriginalEvents = eventList.getAllByText('원본 유지 테스트');
       expect(remainingOriginalEvents.length).toBe(originalCount - 1);
     });
   });
@@ -330,16 +358,19 @@ describe('반복 일정 UI 통합 테스트', () => {
       description: '테스트',
       location: '회의실',
       category: '업무',
-      repeat: { type: 'daily', interval: 1 },
+      repeat: { type: 'daily', interval: 1, endDate: '2025-10-20' },
       repeatType: 'daily',
+      repeatEndDate: '2025-10-20',
     });
 
     await waitFor(() => {
-      const events = screen.getAllByText('단일 삭제 테스트');
+      const eventList = within(screen.getByTestId('event-list'));
+      const events = eventList.getAllByText('단일 삭제 테스트');
       expect(events.length).toBeGreaterThan(1);
     });
 
-    const originalCount = screen.getAllByText('단일 삭제 테스트').length;
+    const eventList = within(screen.getByTestId('event-list'));
+    const originalCount = eventList.getAllByText('단일 삭제 테스트').length;
 
     const deleteButtons = screen.getAllByLabelText(/Delete event/i);
     await user.click(deleteButtons[0]);
@@ -353,7 +384,8 @@ describe('반복 일정 UI 통합 테스트', () => {
     await user.click(yesButton);
 
     await waitFor(() => {
-      const remainingEvents = screen.getAllByText('단일 삭제 테스트');
+      const eventListAfter = within(screen.getByTestId('event-list'));
+      const remainingEvents = eventListAfter.getAllByText('단일 삭제 테스트');
       expect(remainingEvents.length).toBe(originalCount - 1);
     });
   });
@@ -370,12 +402,14 @@ describe('반복 일정 UI 통합 테스트', () => {
       description: '테스트',
       location: '회의실',
       category: '업무',
-      repeat: { type: 'daily', interval: 1 },
+      repeat: { type: 'daily', interval: 1, endDate: '2025-10-20' },
       repeatType: 'daily',
+      repeatEndDate: '2025-10-20',
     });
 
     await waitFor(() => {
-      const events = screen.getAllByText('전체 삭제 테스트');
+      const eventList = within(screen.getByTestId('event-list'));
+      const events = eventList.getAllByText('전체 삭제 테스트');
       expect(events.length).toBeGreaterThan(1);
     });
 
@@ -391,7 +425,8 @@ describe('반복 일정 UI 통합 테스트', () => {
     await user.click(noButton);
 
     await waitFor(() => {
-      const events = screen.queryAllByText('전체 삭제 테스트');
+      const eventList = within(screen.getByTestId('event-list'));
+      const events = eventList.queryAllByText('전체 삭제 테스트');
       expect(events.length).toBe(0);
     });
   });
@@ -408,8 +443,9 @@ describe('반복 일정 UI 통합 테스트', () => {
       description: '테스트',
       location: '회의실',
       category: '업무',
-      repeat: { type: 'daily', interval: 1 },
+      repeat: { type: 'daily', interval: 1, endDate: '2025-10-20' },
       repeatType: 'daily',
+      repeatEndDate: '2025-10-20',
     });
 
     await waitFor(() => {

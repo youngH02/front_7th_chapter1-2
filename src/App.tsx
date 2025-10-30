@@ -103,8 +103,9 @@ function App() {
     editEvent,
   } = useEventForm();
 
-  const { events, saveEvent, deleteEvent } = useEventOperations(Boolean(editingEvent), () =>
-    setEditingEvent(null)
+  const { events, saveEvent, deleteEvent, fetchEvents } = useEventOperations(
+    Boolean(editingEvent),
+    () => setEditingEvent(null)
   );
 
   const { notifications, notifiedEvents, setNotifications } = useNotifications(events);
@@ -131,7 +132,25 @@ function App() {
         ...pendingEvent,
         repeat: { type: 'none' as const, interval: 1 },
       };
-      await saveEvent(updatedEvent);
+
+      try {
+        const response = await fetch(`/api/events/${pendingEvent.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(updatedEvent),
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to update event');
+        }
+
+        await fetchEvents();
+        enqueueSnackbar('일정이 수정되었습니다.', { variant: 'success' });
+      } catch (error) {
+        console.error('Error updating event:', error);
+        enqueueSnackbar('일정 수정 실패', { variant: 'error' });
+      }
+
       editEvent(updatedEvent);
     } else {
       await deleteEvent(pendingEvent.id);
@@ -146,7 +165,7 @@ function App() {
       editEvent(pendingEvent);
     } else {
       const baseId = pendingEvent.id.split('_')[0];
-      const eventsToDelete = events.filter((e) => e.id.startsWith(baseId));
+      const eventsToDelete = events.filter((e) => e.id.startsWith(baseId + '_') || e.id === baseId);
       for (const event of eventsToDelete) {
         await deleteEvent(event.id);
       }
@@ -182,14 +201,19 @@ function App() {
       notificationTime,
     };
 
-    const overlapping = findOverlappingEvents(eventData, events);
-    if (overlapping.length > 0) {
-      setOverlappingEvents(overlapping);
-      setIsOverlapDialogOpen(true);
-    } else {
-      await saveEvent(eventData);
-      resetForm();
+    const isRecurringEvent = isRepeating && repeatType !== 'none';
+
+    if (!isRecurringEvent) {
+      const overlapping = findOverlappingEvents(eventData, events);
+      if (overlapping.length > 0) {
+        setOverlappingEvents(overlapping);
+        setIsOverlapDialogOpen(true);
+        return;
+      }
     }
+
+    await saveEvent(eventData);
+    resetForm();
   };
 
   const renderWeekView = () => {
@@ -505,17 +529,6 @@ function App() {
 
           {isRepeating && (
             <Stack spacing={2}>
-              <FormControl fullWidth>
-                <FormLabel htmlFor="repeat-interval">반복 간격</FormLabel>
-                <TextField
-                  id="repeat-interval"
-                  size="small"
-                  type="number"
-                  value={repeatInterval}
-                  onChange={(e) => setRepeatInterval(Number(e.target.value))}
-                  slotProps={{ htmlInput: { min: 1 } }}
-                />
-              </FormControl>
               <Stack direction="row" spacing={2}>
                 <FormControl fullWidth>
                   <FormLabel htmlFor="repeat-interval">반복 간격</FormLabel>

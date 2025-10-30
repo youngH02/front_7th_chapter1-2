@@ -39,6 +39,11 @@ export const useEventOperations = (editing: boolean, onSave?: () => void) => {
 
         if (eventData.repeat.type !== 'none') {
           const recurringEvents = generateRecurringEvents(baseEvent, eventData.repeat);
+          console.log('🔄 반복 일정 생성:', recurringEvents.length, '개');
+          console.log(
+            '📅 생성된 일정 날짜:',
+            recurringEvents.map((e) => e.date)
+          );
 
           for (const event of recurringEvents) {
             const eventResponse = await fetch('/api/events', {
