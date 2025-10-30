@@ -38,10 +38,12 @@ import {
 import { useSnackbar } from 'notistack';
 import { useState } from 'react';
 
+import { RecurringEventDialog } from './components/RecurringEventDialog';
 import { useCalendarView } from './hooks/useCalendarView.ts';
 import { useEventForm } from './hooks/useEventForm.ts';
 import { useEventOperations } from './hooks/useEventOperations.ts';
 import { useNotifications } from './hooks/useNotifications.ts';
+import { useRecurringEvents } from './hooks/useRecurringEvents';
 import { useSearch } from './hooks/useSearch.ts';
 import { Event, EventForm, RepeatType } from './types';
 import {
@@ -108,11 +110,49 @@ function App() {
   const { notifications, notifiedEvents, setNotifications } = useNotifications(events);
   const { view, setView, currentDate, holidays, navigate } = useCalendarView();
   const { searchTerm, filteredEvents, setSearchTerm } = useSearch(events, currentDate, view);
+  const {
+    isRecurringDialogOpen,
+    recurringDialogType,
+    pendingEvent,
+    openRecurringDialog,
+    closeRecurringDialog,
+  } = useRecurringEvents();
 
   const [isOverlapDialogOpen, setIsOverlapDialogOpen] = useState(false);
   const [overlappingEvents, setOverlappingEvents] = useState<Event[]>([]);
 
   const { enqueueSnackbar } = useSnackbar();
+
+  const handleRecurringSingle = async () => {
+    if (!pendingEvent) return;
+
+    if (recurringDialogType === 'edit') {
+      const updatedEvent = {
+        ...pendingEvent,
+        repeat: { type: 'none' as const, interval: 1 },
+      };
+      await saveEvent(updatedEvent);
+      editEvent(updatedEvent);
+    } else {
+      await deleteEvent(pendingEvent.id);
+    }
+    closeRecurringDialog();
+  };
+
+  const handleRecurringAll = async () => {
+    if (!pendingEvent) return;
+
+    if (recurringDialogType === 'edit') {
+      editEvent(pendingEvent);
+    } else {
+      const baseId = pendingEvent.id.split('_')[0];
+      const eventsToDelete = events.filter((e) => e.id.startsWith(baseId));
+      for (const event of eventsToDelete) {
+        await deleteEvent(event.id);
+      }
+    }
+    closeRecurringDialog();
+  };
 
   const addOrUpdateEvent = async () => {
     if (!title || !date || !startTime || !endTime) {
@@ -422,16 +462,29 @@ function App() {
             </Select>
           </FormControl>
 
-          <FormControl>
-            <FormControlLabel
-              control={
-                <Checkbox
-                  checked={isRepeating}
-                  onChange={(e) => setIsRepeating(e.target.checked)}
-                />
-              }
-              label="반복 일정"
-            />
+          <FormControl fullWidth>
+            <FormLabel htmlFor="repeat-type">반복 유형</FormLabel>
+            <Select
+              id="repeat-type"
+              size="small"
+              value={isRepeating ? repeatType : 'none'}
+              onChange={(e) => {
+                const value = e.target.value;
+                if (value === 'none') {
+                  setIsRepeating(false);
+                } else {
+                  setIsRepeating(true);
+                  setRepeatType(value as RepeatType);
+                }
+              }}
+              aria-label="반복 유형"
+            >
+              <MenuItem value="none">반복 안함</MenuItem>
+              <MenuItem value="daily">매일</MenuItem>
+              <MenuItem value="weekly">매주</MenuItem>
+              <MenuItem value="monthly">매월</MenuItem>
+              <MenuItem value="yearly">매년</MenuItem>
+            </Select>
           </FormControl>
 
           <FormControl fullWidth>
@@ -453,19 +506,15 @@ function App() {
           {isRepeating && (
             <Stack spacing={2}>
               <FormControl fullWidth>
-                <FormLabel htmlFor="repeat-type">반복 유형</FormLabel>
-                <Select
-                  id="repeat-type"
+                <FormLabel htmlFor="repeat-interval">반복 간격</FormLabel>
+                <TextField
+                  id="repeat-interval"
                   size="small"
-                  value={repeatType}
-                  onChange={(e) => setRepeatType(e.target.value as RepeatType)}
-                  aria-label="반복 유형"
-                >
-                  <MenuItem value="daily">매일</MenuItem>
-                  <MenuItem value="weekly">매주</MenuItem>
-                  <MenuItem value="monthly">매월</MenuItem>
-                  <MenuItem value="yearly">매년</MenuItem>
-                </Select>
+                  type="number"
+                  value={repeatInterval}
+                  onChange={(e) => setRepeatInterval(Number(e.target.value))}
+                  slotProps={{ htmlInput: { min: 1 } }}
+                />
               </FormControl>
               <Stack direction="row" spacing={2}>
                 <FormControl fullWidth>
@@ -591,10 +640,24 @@ function App() {
                     </Typography>
                   </Stack>
                   <Stack>
-                    <IconButton aria-label="Edit event" onClick={() => editEvent(event)}>
+                    <IconButton
+                      aria-label="Edit event"
+                      onClick={() => {
+                        if (!openRecurringDialog(event, 'edit')) {
+                          editEvent(event);
+                        }
+                      }}
+                    >
                       <Edit />
                     </IconButton>
-                    <IconButton aria-label="Delete event" onClick={() => deleteEvent(event.id)}>
+                    <IconButton
+                      aria-label="Delete event"
+                      onClick={() => {
+                        if (!openRecurringDialog(event, 'delete')) {
+                          deleteEvent(event.id);
+                        }
+                      }}
+                    >
                       <Delete />
                     </IconButton>
                   </Stack>
@@ -646,6 +709,14 @@ function App() {
           </Button>
         </DialogActions>
       </Dialog>
+
+      <RecurringEventDialog
+        open={isRecurringDialogOpen}
+        type={recurringDialogType}
+        onClose={closeRecurringDialog}
+        onSingle={handleRecurringSingle}
+        onAll={handleRecurringAll}
+      />
 
       {notifications.length > 0 && (
         <Stack position="fixed" top={16} right={16} spacing={2} alignItems="flex-end">

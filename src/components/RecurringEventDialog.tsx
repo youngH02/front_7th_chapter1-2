@@ -9,7 +9,7 @@ import {
 
 interface RecurringEventDialogProps {
   open: boolean;
-  action: 'edit' | 'delete' | null;
+  type: 'edit' | 'delete';
   onClose: () => void;
   onSingle: () => void;
   onAll: () => void;
@@ -17,13 +17,13 @@ interface RecurringEventDialogProps {
 
 export function RecurringEventDialog({
   open,
-  action,
+  type,
   onClose,
   onSingle,
   onAll,
 }: RecurringEventDialogProps) {
-  const title = action === 'edit' ? '반복 일정 수정' : '반복 일정 삭제';
-  const message = action === 'edit' ? '해당 일정만 수정하시겠어요?' : '해당 일정만 삭제하시겠어요?';
+  const title = type === 'edit' ? '반복 일정 수정' : '반복 일정 삭제';
+  const message = type === 'edit' ? '해당 일정만 수정하시겠어요?' : '해당 일정만 삭제하시겠어요?';
 
   return (
     <Dialog open={open} onClose={onClose}>
